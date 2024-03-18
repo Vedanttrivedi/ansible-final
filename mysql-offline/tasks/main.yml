@@ -1,0 +1,52 @@
+---
+- name: Ensure mysql_installation_files directory exists
+  file:
+    path: "/home/{{ ansible_env.SUDO_USER }}/mysql_installation_files"
+    state: directory
+  become: true
+
+- name: Copy MySQL installation file to target server
+  copy:
+    src: "mysql-apt-config_0.8.12-1_all.deb"
+    dest: "/home/{{ ansible_env.SUDO_USER }}/mysql_installation_files/mysql-apt-config_0.8.12-1_all.deb"
+  become: true
+
+- name: Install MySQL 5.7 from copied file
+  apt:
+    deb: "/home/{{ ansible_env.SUDO_USER }}/mysql_installation_files/mysql-apt-config_0.8.12-1_all.deb"
+    state: present
+  become: true
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  become: true
+
+- name: Check whether MySQL 5.7 repository has been successfully installed
+  command: "apt-cache policy mysql-server"
+  become: true
+  register: apt_policy_output
+  ignore_errors: true
+
+- name: Import missing GPG key for MySQL repository
+  apt_key:
+    url: "http://repo.mysql.com/RPM-GPG-KEY-mysql"
+    state: present
+  become: true
+  when: "'NO_PUBKEY' in apt_policy_output.stdout"
+
+- name: Update apt cache after importing GPG key
+  apt:
+    update_cache: yes
+  become: true
+  when: "'NO_PUBKEY' in apt_policy_output.stdout"
+
+- name: Install MySQL packages
+  apt:
+    name: "mysql-client=5.7* mysql-community-server=5.7* mysql-server=5.7*"
+    state: present
+  become: true
+
+- name: Secure MySQL installation
+  command: "mysql_secure_installation"
+  become: true

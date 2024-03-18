@@ -1,0 +1,15 @@
+- name: Install MySQL offline
+  hosts: servers
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Gather facts
+      setup:
+      register: server_facts
+
+    - name: Log gathered facts
+      debug:
+        var: server_facts
+  roles:
+    - mysql-offline
+  
